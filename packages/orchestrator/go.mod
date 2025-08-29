@@ -44,6 +44,8 @@ require (
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 )
 
+require github.com/google/gopacket v1.1.19 // indirect
+
 require (
 	cel.dev/expr v0.24.0 // indirect
 	cloud.google.com/go v0.116.0 // indirect
