@@ -9,6 +9,7 @@ use (
 	./packages/db
 	./packages/docker-reverse-proxy
 	./packages/envd
+	./packages/local-dev
 	./packages/orchestrator
 	./packages/shared
 

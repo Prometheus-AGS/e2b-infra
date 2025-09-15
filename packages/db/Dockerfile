@@ -12,7 +12,7 @@ COPY .shared/pkg pkg
 #
 WORKDIR /build/db
 
-COPY go.mod go.sum ./
+COPY go.work go.work.sum ./
 RUN go mod download
 
 COPY scripts/migrator.go .
