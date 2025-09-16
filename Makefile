@@ -219,6 +219,6 @@ generate-mocks:
 tidy:
 	scripts/golang-dependencies-integrity.sh
 
-.PHONY: local-dev-infra
-local-dev-infra:
+.PHONY: local-infra
+local-infra:
 	docker compose up --abort-on-container-failure

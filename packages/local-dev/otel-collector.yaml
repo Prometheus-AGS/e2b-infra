@@ -10,10 +10,14 @@ processors:
   batch:
 
 exporters:
-  otlphttp/tempo:
-    endpoint: http://tempo:3200
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+  otlp/tempo:
+    endpoint: tempo:4317
     tls:
       insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:9100
 
 extensions:
   health_check:
@@ -29,12 +33,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlphttp/tempo]
+      exporters: [otlp/tempo]
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlphttp/tempo]
+      exporters: [prometheus]
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlphttp/tempo]
+      exporters: [otlphttp/loki]

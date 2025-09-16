@@ -25,6 +25,10 @@ services:
     ports:
       - "53000:3000"
 
+  loki:
+    image: grafana/loki:3.4.1
+    command: -config.file=/etc/loki/local-config.yaml
+
   memcached:
     image: memcached:1.6.38
     container_name: memcached
@@ -39,13 +43,8 @@ services:
     volumes:
       - ./packages/local-dev/otel-collector.yaml:/etc/otelcol-contrib/config.yaml
     ports:
-      - 1888:1888 # pprof extension
-      - 8888:8888 # Prometheus metrics exposed by the Collector
-      - 8889:8889 # Prometheus exporter metrics
-      - 13133:13133 # health_check extension
-      - 4317:4317 # OTLP gRPC receiver
-      - 4318:4318 # OTLP http receiver
-      - 55679:55679 # zpages extension
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver"
 
   postgres:
     image: postgres:17.4
@@ -68,8 +67,6 @@ services:
       - --enable-feature=native-histograms
     volumes:
       - ./packages/local-dev/prometheus.yaml:/etc/prometheus.yaml
-    ports:
-      - "9090:9090"
 
   redis:
     image: redis:7.4.2
@@ -82,13 +79,8 @@ services:
     volumes:
       - ./packages/local-dev/tempo.yaml:/etc/tempo.yaml
       - tempo:/var/tempo
-#    ports:
-#      - "14268:14268" # jaeger ingest
-#      - "3200:3200" # tempo
-#      - "9095:9095" # tempo grpc
-#      - "4317:4317" # otlp grpc
-#      - "4318:4318" # otlp http
-#      - "9411:9411" # zipkin
+    ports:
+      - "3200"
     depends_on:
       - tempo-init
       - memcached
