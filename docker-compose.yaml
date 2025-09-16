@@ -38,8 +38,14 @@ services:
       - MEMCACHED_MAX_MEMORY=64m # Set the maximum memory usage
       - MEMCACHED_THREADS=4 # Number of threads to use
 
+  mimir:
+    image: grafana/mimir:2.17.1
+    command: -config.file=/etc/mimir/mimir.yaml
+    volumes:
+      - ./packages/local-dev/mimir.yaml:/etc/mimir/mimir.yaml
+
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.123.0
+    image: otel/opentelemetry-collector-contrib:0.135.0
     volumes:
       - ./packages/local-dev/otel-collector.yaml:/etc/otelcol-contrib/config.yaml
     ports:
@@ -57,16 +63,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres:/var/lib/postgresql/17/docker
-
-  prometheus:
-    image: prom/prometheus:latest
-    command:
-      - --config.file=/etc/prometheus.yaml
-      - --web.enable-remote-write-receiver
-      - --enable-feature=exemplar-storage
-      - --enable-feature=native-histograms
-    volumes:
-      - ./packages/local-dev/prometheus.yaml:/etc/prometheus.yaml
 
   redis:
     image: redis:7.4.2

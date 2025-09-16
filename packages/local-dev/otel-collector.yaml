@@ -12,12 +12,12 @@ processors:
 exporters:
   otlphttp/loki:
     endpoint: http://loki:3100/otlp
+  otlphttp/mimir:
+    endpoint: http://mimir:9009/otlp
   otlp/tempo:
     endpoint: tempo:4317
     tls:
       insecure: true
-  prometheus:
-    endpoint: 0.0.0.0:9100
 
 extensions:
   health_check:
@@ -37,7 +37,7 @@ service:
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [prometheus]
+      exporters: [otlphttp/mimir]
     logs:
       receivers: [otlp]
       processors: [batch]

@@ -17,7 +17,13 @@ const (
 	fallbackDiffSize = 100 << ToMBShift
 )
 
-const DefaultCachePath = "/orchestrator/build"
+var DefaultCachePath string
+
+func init() {
+	if DefaultCachePath = os.Getenv("DEFAULT_BUILD_CACHE_PATH"); DefaultCachePath == "" {
+		DefaultCachePath = "/orchestrator/build"
+	}
+}
 
 type deleteDiff struct {
 	size      int64
