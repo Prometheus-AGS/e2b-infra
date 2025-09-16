@@ -54,12 +54,12 @@ chosen_env AS (
 INSERT INTO "public"."env_builds" (
     env_id, vcpu, ram_mb, free_disk_size_mb,
     kernel_version, firecracker_version, envd_version,
-    status, cluster_node_id, total_disk_size_mb
+    status, cluster_node_id, total_disk_size_mb, updated_at
 )
 SELECT
     env_id, $1, $2, 0,
     $3, $4, $5,
-    $6, $7, $8
+    $6, $7, $8, now()
 FROM chosen_env
 RETURNING id, env_id
 `
