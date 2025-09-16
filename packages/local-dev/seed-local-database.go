@@ -17,8 +17,9 @@ import (
 )
 
 var (
-	tokenID    = uuid.MustParse("3d98c426-d348-446b-bdf6-5be3ca4123e2")
-	tokenValue = "89215020937a4c989cde33d7bc647715"
+	tokenID        = uuid.MustParse("3d98c426-d348-446b-bdf6-5be3ca4123e2")
+	userTokenValue = "89215020937a4c989cde33d7bc647715"
+	teamTokenValue = "53ae1fed82754c17ad8077fbc8bcdd90"
 )
 
 func main() {
@@ -57,9 +58,36 @@ func run(ctx context.Context) error {
 
 	err = ensureUserIsOnTeam(ctx, database, user, team)
 
-	// create api tokens
-	if err = upsertUserToken(ctx, database, user); err != nil {
+	// create user token
+	if err = upsertUserToken(ctx, database, user, userTokenValue); err != nil {
 		return fmt.Errorf("failed to upsert token: %w", err)
+	}
+
+	// create team token
+	if err = upsertTeamToken(ctx, database, team, teamTokenValue); err != nil {
+		return fmt.Errorf("failed to upsert token: %w", err)
+	}
+
+	return nil
+}
+
+func upsertTeamToken(ctx context.Context, database *db.DB, team *models.Team, token string) error {
+	tokenHash, tokenMask, err := createTokenHash(token)
+	if err != nil {
+		return fmt.Errorf("failed to create token hash: %w", err)
+	}
+
+	if _, err = database.Client.TeamAPIKey.Create().
+		SetID(tokenID).
+		SetName("local dev seed token").
+		SetTeam(team).
+		SetAPIKeyHash(tokenHash).
+		SetAPIKeyLength(tokenMask.ValueLength).
+		SetAPIKeyPrefix(tokenMask.Prefix).
+		SetAPIKeyMaskPrefix(tokenMask.MaskedValuePrefix).
+		SetAPIKeyMaskSuffix(tokenMask.MaskedValueSuffix).
+		Save(ctx); ignoreConstraints(err) != nil {
+		return fmt.Errorf("failed to create token: %w", err)
 	}
 
 	return nil
@@ -76,8 +104,8 @@ func ensureUserIsOnTeam(ctx context.Context, database *db.DB, user *models.User,
 	return nil
 }
 
-func upsertUserToken(ctx context.Context, database *db.DB, user *models.User) error {
-	tokenHash, tokenMask, err := createTokenHash(tokenValue)
+func upsertUserToken(ctx context.Context, database *db.DB, user *models.User, token string) error {
+	tokenHash, tokenMask, err := createTokenHash(token)
 	if err != nil {
 		return fmt.Errorf("failed to create token hash: %w", err)
 	}
