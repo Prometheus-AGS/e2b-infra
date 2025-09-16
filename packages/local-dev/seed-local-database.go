@@ -59,20 +59,20 @@ func run(ctx context.Context) error {
 	err = ensureUserIsOnTeam(ctx, database, user, team)
 
 	// create user token
-	if err = upsertUserToken(ctx, database, user, userTokenValue); err != nil {
+	if err = upsertUserToken(ctx, database, user, keys.AccessTokenPrefix, userTokenValue); err != nil {
 		return fmt.Errorf("failed to upsert token: %w", err)
 	}
 
 	// create team token
-	if err = upsertTeamToken(ctx, database, team, teamTokenValue); err != nil {
+	if err = upsertTeamToken(ctx, database, team, keys.ApiKeyPrefix, teamTokenValue); err != nil {
 		return fmt.Errorf("failed to upsert token: %w", err)
 	}
 
 	return nil
 }
 
-func upsertTeamToken(ctx context.Context, database *db.DB, team *models.Team, token string) error {
-	tokenHash, tokenMask, err := createTokenHash(token)
+func upsertTeamToken(ctx context.Context, database *db.DB, team *models.Team, tokenPrefix, token string) error {
+	tokenHash, tokenMask, err := createTokenHash(tokenPrefix, token)
 	if err != nil {
 		return fmt.Errorf("failed to create token hash: %w", err)
 	}
@@ -104,8 +104,8 @@ func ensureUserIsOnTeam(ctx context.Context, database *db.DB, user *models.User,
 	return nil
 }
 
-func upsertUserToken(ctx context.Context, database *db.DB, user *models.User, token string) error {
-	tokenHash, tokenMask, err := createTokenHash(token)
+func upsertUserToken(ctx context.Context, database *db.DB, user *models.User, tokenPrefix, token string) error {
+	tokenHash, tokenMask, err := createTokenHash(tokenPrefix, token)
 	if err != nil {
 		return fmt.Errorf("failed to create token hash: %w", err)
 	}
@@ -190,15 +190,15 @@ func updateUser[T interface {
 		SetEmail("user@e2b-dev.local")
 }
 
-func createTokenHash(accessToken string) (string, keys.MaskedIdentifier, error) {
+func createTokenHash(prefix, accessToken string) (string, keys.MaskedIdentifier, error) {
 	hasher := keys.NewSHA256Hashing()
-	tokenWithoutPrefix := strings.TrimPrefix(accessToken, keys.AccessTokenPrefix)
+	tokenWithoutPrefix := strings.TrimPrefix(accessToken, prefix)
 	accessTokenBytes, err := hex.DecodeString(tokenWithoutPrefix)
 	if err != nil {
 		return "", keys.MaskedIdentifier{}, fmt.Errorf("failed to hex decode string")
 	}
 	accessTokenHash := hasher.Hash(accessTokenBytes)
-	accessTokenMask, err := keys.MaskKey(keys.AccessTokenPrefix, tokenWithoutPrefix)
+	accessTokenMask, err := keys.MaskKey(prefix, tokenWithoutPrefix)
 	if err != nil {
 		return "", keys.MaskedIdentifier{}, fmt.Errorf("failed to mask key")
 	}
