@@ -27,8 +27,8 @@ WITH upd AS (
         RETURNING s.env_id
 ),
     ins_env AS (
-    INSERT INTO "public"."envs" (id, public, created_by, team_id)
-        SELECT $14, false, NULL, $13
+    INSERT INTO "public"."envs" (id, public, created_by, team_id, updated_at)
+        SELECT $14, false, NULL, $13, now()
         WHERE NOT EXISTS (SELECT 1 FROM upd)
         RETURNING id
 ), ins_snap AS (

@@ -14,8 +14,8 @@ WITH upd AS (
 ),
 -- If there's no snapshot WHERE NOT EXISTS (SELECT 1 FROM upd) will trigger following queries to create new env and snapshot
     ins_env AS (
-    INSERT INTO "public"."envs" (id, public, created_by, team_id)
-        SELECT @template_id, false, NULL, @team_id
+    INSERT INTO "public"."envs" (id, public, created_by, team_id, updated_at)
+        SELECT @template_id, false, NULL, @team_id, now()
         WHERE NOT EXISTS (SELECT 1 FROM upd)
         RETURNING id
 ), ins_snap AS (
