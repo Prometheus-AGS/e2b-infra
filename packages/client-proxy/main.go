@@ -136,7 +136,7 @@ func run() int {
 		redisSync := redsync.New(goredis.NewPool(redisClient))
 		catalog = sandboxes.NewRedisSandboxesCatalog(redisClient, redisSync)
 	} else {
-		logger.Warn("Redis environment variable is not set, will fallback to in-memory sandboxes catalog that works only with one instance setup")
+		logger.Warn("REDIS_CLUSTER_URL and REDIS_URL are not set, will fallback to in-memory sandboxes catalog that works only with one instance setup")
 		catalog = sandboxes.NewMemorySandboxesCatalog()
 	}
 

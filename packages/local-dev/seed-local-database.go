@@ -20,6 +20,7 @@ var (
 	tokenID        = uuid.MustParse("3d98c426-d348-446b-bdf6-5be3ca4123e2")
 	userTokenValue = "89215020937a4c989cde33d7bc647715"
 	teamTokenValue = "53ae1fed82754c17ad8077fbc8bcdd90"
+	clusterToken   = "6e15ed023bd545d88f71446f14b28661"
 )
 
 func main() {
@@ -67,6 +68,11 @@ func run(ctx context.Context) error {
 	if err = upsertTeamToken(ctx, database, team, keys.ApiKeyPrefix, teamTokenValue); err != nil {
 		return fmt.Errorf("failed to upsert token: %w", err)
 	}
+
+	// create local cluster
+	//if err = upsertLocalCluster(ctx, database); err != nil {
+	//	return fmt.Errorf("failed to upsert local cluster: %w", err)
+	//}
 
 	return nil
 }
@@ -122,6 +128,45 @@ func upsertUserToken(ctx context.Context, database *db.DB, user *models.User, to
 		return fmt.Errorf("failed to create token: %w", err)
 	}
 
+	return nil
+}
+
+type command[T any] interface {
+	Save(ctx context.Context) (T, error)
+}
+
+type clusterCommand[T any] interface {
+	SetEndpointTLS(b bool) T
+	SetEndpoint(s string) T
+	SetToken(t string) T
+	SetSandboxProxyDomain(s string) T
+}
+
+func updateCluster[T clusterCommand[T]](cmd T) T {
+	return cmd.
+		SetEndpointTLS(false).
+		SetToken(clusterToken).
+		SetSandboxProxyDomain("e2b-dev.local").
+		SetEndpoint("http://localhost:10666")
+}
+
+func upsertLocalCluster(ctx context.Context, database *db.DB) error {
+	clusterID := uuid.MustParse("c8c92517-474f-411b-aa99-29139498bd51")
+	clusters := database.Client.Cluster
+	cluster, err := clusters.Get(ctx, clusterID)
+
+	var cmd command[*models.Cluster]
+	if err == nil {
+		cmd = updateCluster(clusters.UpdateOne(cluster))
+	} else if models.IsNotFound(err) {
+		cmd = updateCluster(clusters.Create()).SetID(clusterID)
+	} else {
+		return fmt.Errorf("failed to get cluster: %w", err)
+	}
+	cluster, err = cmd.Save(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create team: %w", err)
+	}
 	return nil
 }
 
