@@ -22,13 +22,13 @@ WITH upd AS (
             auto_pause = $11
         FROM "public"."envs" e
         WHERE s.sandbox_id = $12
-            AND e.id = s.env_id
-            AND e.team_id = $13
+            AND e.id = $13
+            AND e.team_id = $14
         RETURNING s.env_id
 ),
     ins_env AS (
     INSERT INTO "public"."envs" (id, public, created_by, team_id, updated_at)
-        SELECT $14, false, NULL, $13, now()
+        SELECT $13, false, NULL, $14, now()
         WHERE NOT EXISTS (SELECT 1 FROM upd)
         RETURNING id
 ), ins_snap AS (
@@ -77,8 +77,8 @@ type CreateNewSnapshotParams struct {
 	StartedAt           pgtype.Timestamptz
 	AutoPause           bool
 	SandboxID           string
-	TeamID              uuid.UUID
 	TemplateID          string
+	TeamID              uuid.UUID
 	BaseTemplateID      string
 	Secure              bool
 	AllowInternetAccess *bool
@@ -107,8 +107,8 @@ func (q *Queries) CreateNewSnapshot(ctx context.Context, arg CreateNewSnapshotPa
 		arg.StartedAt,
 		arg.AutoPause,
 		arg.SandboxID,
-		arg.TeamID,
 		arg.TemplateID,
+		arg.TeamID,
 		arg.BaseTemplateID,
 		arg.Secure,
 		arg.AllowInternetAccess,

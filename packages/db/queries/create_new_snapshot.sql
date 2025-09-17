@@ -8,7 +8,7 @@ WITH upd AS (
             auto_pause = @auto_pause
         FROM "public"."envs" e
         WHERE s.sandbox_id = @sandbox_id
-            AND e.id = s.env_id
+            AND e.id = @template_id
             AND e.team_id = @team_id
         RETURNING s.env_id
 ),
