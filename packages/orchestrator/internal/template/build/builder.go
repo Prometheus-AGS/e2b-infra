@@ -177,14 +177,13 @@ func (b *Builder) Build(ctx context.Context, template storage.TemplateFiles, con
 	buildContext := buildcontext.BuildContext{
 		Config:         config,
 		Template:       template,
-		UserLogger:     logger,
 		UploadErrGroup: &uploadErrGroup,
 		EnvdVersion:    envdVersion,
 		CacheScope:     cacheScope,
 		IsV1Build:      isV1Build,
 	}
 
-	return b.runBuild(ctx, buildContext)
+	return b.runBuild(ctx, logger, buildContext)
 }
 
 func (b *Builder) useNFSCache(ctx context.Context) bool {
@@ -203,6 +202,7 @@ func (b *Builder) useNFSCache(ctx context.Context) bool {
 
 func (b *Builder) runBuild(
 	ctx context.Context,
+	userLogger *zap.Logger,
 	bc buildcontext.BuildContext,
 ) (*Result, error) {
 	templateStorage := b.templateStorage
@@ -266,8 +266,8 @@ func (b *Builder) runBuild(
 	}
 	builders = append(builders, stepBuilders...)
 	builders = append(builders, postProcessingBuilder)
-
-	lastLayerResult, err := phases.Run(ctx, bc, b.metrics, builders)
+	
+	lastLayerResult, err := phases.Run(ctx, userLogger, bc, b.metrics, builders)
 	if err != nil {
 		return nil, err
 	}
