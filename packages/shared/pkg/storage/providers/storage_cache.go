@@ -187,7 +187,14 @@ func (c *CachedFileObjectProvider) WriteFromFileSystem(ctx context.Context, path
 	// write the file to the disk and the remote system at the same time.
 	// this opens the file twice, but the API makes it difficult to use a MultiWriter
 
-	go c.createCacheBlocksFromFile(ctx, path)
+	go func() {
+		if err2 := c.createCacheBlocksFromFile(ctx, path); err2 != nil {
+			zap.L().Error("failed to create cache blocks from file",
+				zap.String("path", path),
+				zap.Error(err),
+			)
+		}
+	}()
 
 	if err := c.inner.WriteFromFileSystem(ctx, path); err != nil {
 		return fmt.Errorf("failed to write to remote storage: %w", err)
@@ -330,22 +337,19 @@ func (c *CachedFileObjectProvider) Delete(ctx context.Context) error {
 	return c.inner.Delete(ctx)
 }
 
-func (c *CachedFileObjectProvider) createCacheBlocksFromFile(ctx context.Context, inputPath string) {
-	var err error
+func (c *CachedFileObjectProvider) createCacheBlocksFromFile(ctx context.Context, inputPath string) (err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.createCacheBlocksFromFile")
 	defer endSpan(span, err)
 
 	input, err := os.Open(inputPath)
 	if err != nil {
-		zap.L().Error("failed to open input file", zap.String("path", inputPath), zap.Error(err))
-		return
+		return fmt.Errorf("failed to open input file: %w", err)
 	}
 	defer cleanup("failed to close file", input)
 
 	stat, err := input.Stat()
 	if err != nil {
-		zap.L().Error("failed to stat input file", zap.String("path", inputPath), zap.Error(err))
-		return
+		return fmt.Errorf("failed to stat input file: %w", err)
 	}
 
 	totalSize := stat.Size()
@@ -369,6 +373,8 @@ func (c *CachedFileObjectProvider) createCacheBlocksFromFile(ctx context.Context
 		}(offset)
 	}
 	wg.Wait()
+
+	return nil
 }
 
 type offsetReader struct {
