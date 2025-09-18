@@ -266,7 +266,7 @@ func (b *Builder) runBuild(
 	}
 	builders = append(builders, stepBuilders...)
 	builders = append(builders, postProcessingBuilder)
-	
+
 	lastLayerResult, err := phases.Run(ctx, userLogger, bc, b.metrics, builders)
 	if err != nil {
 		return nil, err
