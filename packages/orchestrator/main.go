@@ -45,7 +45,7 @@ import (
 	sbxlogger "github.com/e2b-dev/infra/packages/shared/pkg/logger/sandbox"
 	"github.com/e2b-dev/infra/packages/shared/pkg/pubsub"
 	"github.com/e2b-dev/infra/packages/shared/pkg/smap"
-	"github.com/e2b-dev/infra/packages/shared/pkg/storage"
+	"github.com/e2b-dev/infra/packages/shared/pkg/storage/providers"
 	"github.com/e2b-dev/infra/packages/shared/pkg/telemetry"
 )
 
@@ -251,7 +251,7 @@ func run(port, proxyPort uint) (success bool) {
 		zap.L().Fatal("failed to create limiter", zap.Error(err))
 	}
 
-	persistence, err := storage.GetTemplateStorageProvider(ctx, limiter)
+	persistence, err := providers.GetTemplateStorageProvider(ctx, limiter)
 	if err != nil {
 		zap.L().Fatal("failed to create template storage provider", zap.Error(err))
 	}
@@ -412,6 +412,7 @@ func run(port, proxyPort uint) (success bool) {
 			persistence,
 			limiter,
 			serviceInfo,
+			featureFlags,
 		)
 		if err != nil {
 			zap.L().Fatal("failed to create template manager", zap.Error(err))
