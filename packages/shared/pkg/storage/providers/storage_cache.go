@@ -224,7 +224,9 @@ func (c *CachedFileObjectProvider) writeCacheAndRemote(ctx context.Context, src 
 	if size != len(src) {
 		zap.L().Warn("remote write didn't match data length",
 			zap.Int("expected_size", len(src)),
-			zap.Int("actual_size", size))
+			zap.Int("actual_size", size),
+			zap.String("root_path", c.path),
+		)
 	}
 
 	chunkSize := int(c.chunkSize)
