@@ -125,7 +125,10 @@ var _ storage.StorageObjectProvider = (*CachedFileObjectProvider)(nil)
 // WriteTo is used for very small files, and we can check against their size to ensure the content is valid.
 func (c *CachedFileObjectProvider) WriteTo(ctx context.Context, dst io.Writer) (written int64, err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.WriteTo")
-	defer func() { endSpan(span, err) }()
+	defer func() {
+		recordError(span, err)
+		span.End()
+	}()
 
 	totalSize, err := c.Size(ctx)
 	if err != nil {
@@ -182,7 +185,10 @@ func (c *CachedFileObjectProvider) WriteTo(ctx context.Context, dst io.Writer) (
 func (c *CachedFileObjectProvider) WriteFromFileSystem(ctx context.Context, path string) (err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.WriteFromFileSystem",
 		trace.WithAttributes(attribute.String("path", path)))
-	defer func() { endSpan(span, err) }()
+	defer func() {
+		recordError(span, err)
+		span.End()
+	}()
 
 	// write the file to the disk and the remote system at the same time.
 	// this opens the file twice, but the API makes it difficult to use a MultiWriter
@@ -191,7 +197,7 @@ func (c *CachedFileObjectProvider) WriteFromFileSystem(ctx context.Context, path
 		if err2 := c.createCacheBlocksFromFile(ctx, path); err2 != nil {
 			zap.L().Error("failed to create cache blocks from file",
 				zap.String("path", path),
-				zap.Error(err),
+				zap.Error(err2),
 			)
 		}
 	}()
@@ -205,7 +211,10 @@ func (c *CachedFileObjectProvider) WriteFromFileSystem(ctx context.Context, path
 
 func (c *CachedFileObjectProvider) Write(ctx context.Context, src []byte) (num int, err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.Write", trace.WithAttributes(attribute.Int("size", len(src))))
-	defer func() { endSpan(span, err) }()
+	defer func() {
+		recordError(span, err)
+		span.End()
+	}()
 
 	num, err = c.writeCacheAndRemote(ctx, src)
 	if err != nil {
@@ -222,7 +231,10 @@ func (c *CachedFileObjectProvider) Write(ctx context.Context, src []byte) (num i
 // in parallel on any other machines.
 func (c *CachedFileObjectProvider) writeCacheAndRemote(ctx context.Context, src []byte) (size int, err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.writeCacheAndRemote")
-	defer func() { endSpan(span, err) }()
+	defer func() {
+		recordError(span, err)
+		span.End()
+	}()
 
 	size, err = c.inner.Write(ctx, src)
 	if err != nil {
@@ -245,11 +257,11 @@ func (c *CachedFileObjectProvider) writeCacheAndRemote(ctx context.Context, src 
 		go func(offset int, buf []byte) {
 			// write to the cache file
 			filename := c.makeChunkFilename(int64(offset))
-			if err = os.WriteFile(filename, buf, cacheFilePermissions); err != nil {
+			if err2 := os.WriteFile(filename, buf, cacheFilePermissions); err2 != nil {
 				safelyRemoveFile(filename)
 				zap.L().Warn("failed to write chunk file",
 					zap.String("filename", filename),
-					zap.Error(err))
+					zap.Error(err2))
 			}
 		}(offset, buf)
 	}
@@ -262,7 +274,10 @@ func (c *CachedFileObjectProvider) ReadAt(ctx context.Context, buff []byte, offs
 		attribute.Int64("offset", offset),
 		attribute.Int("buff_len", len(buff)),
 	))
-	defer func() { endSpan(span, err) }()
+	defer func() {
+		recordError(span, err)
+		span.End()
+	}()
 
 	if err := c.validateReadAtParams(int64(len(buff)), offset); err != nil {
 		return 0, err
@@ -290,9 +305,9 @@ func (c *CachedFileObjectProvider) ReadAt(ctx context.Context, buff []byte, offs
 		return 0, fmt.Errorf("failed to perform uncached read: %w", err)
 	}
 
-	go func() {
-		c.writeChunkToCache(context.WithoutCancel(ctx), offset, chunkPath, buff[:readCount])
-	}()
+	go func(count int) {
+		c.writeChunkToCache(context.WithoutCancel(ctx), offset, chunkPath, buff[:count])
+	}(readCount)
 
 	span.SetAttributes(attribute.String("read-from", "remote"))
 	return readCount, nil
@@ -339,7 +354,10 @@ func (c *CachedFileObjectProvider) Delete(ctx context.Context) error {
 
 func (c *CachedFileObjectProvider) createCacheBlocksFromFile(ctx context.Context, inputPath string) (err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.createCacheBlocksFromFile")
-	defer func() { endSpan(span, err) }()
+	defer func() {
+		recordError(span, err)
+		span.End()
+	}()
 
 	input, err := os.Open(inputPath)
 	if err != nil {
@@ -400,7 +418,10 @@ func (c *CachedFileObjectProvider) writeChunkFromFile(ctx context.Context, offse
 	_, span := tracer.Start(ctx, "write chunk-from-file", trace.WithAttributes(
 		attribute.Int64("offset", offset),
 	))
-	defer func() { endSpan(span, err) }()
+	defer func() {
+		recordError(span, err)
+		span.End()
+	}()
 
 	chunkPath := c.makeChunkFilename(offset)
 	span.SetAttributes(attribute.String("chunk_path", chunkPath))
@@ -585,13 +606,11 @@ func safelyRemoveFile(path string) {
 	}
 }
 
-func endSpan(span trace.Span, err error) {
-	var options []trace.SpanEndOption
-
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
+func recordError(span trace.Span, err error) {
+	if err == nil {
+		return
 	}
 
-	span.End(options...)
+	span.RecordError(err)
+	span.SetStatus(codes.Error, err.Error())
 }
