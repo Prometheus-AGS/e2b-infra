@@ -125,7 +125,7 @@ var _ storage.StorageObjectProvider = (*CachedFileObjectProvider)(nil)
 // WriteTo is used for very small files, and we can check against their size to ensure the content is valid.
 func (c *CachedFileObjectProvider) WriteTo(ctx context.Context, dst io.Writer) (written int64, err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.WriteTo")
-	defer endSpan(span, err)
+	defer func() { endSpan(span, err) }()
 
 	totalSize, err := c.Size(ctx)
 	if err != nil {
@@ -182,7 +182,7 @@ func (c *CachedFileObjectProvider) WriteTo(ctx context.Context, dst io.Writer) (
 func (c *CachedFileObjectProvider) WriteFromFileSystem(ctx context.Context, path string) (err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.WriteFromFileSystem",
 		trace.WithAttributes(attribute.String("path", path)))
-	defer endSpan(span, err)
+	defer func() { endSpan(span, err) }()
 
 	// write the file to the disk and the remote system at the same time.
 	// this opens the file twice, but the API makes it difficult to use a MultiWriter
@@ -205,7 +205,7 @@ func (c *CachedFileObjectProvider) WriteFromFileSystem(ctx context.Context, path
 
 func (c *CachedFileObjectProvider) Write(ctx context.Context, src []byte) (num int, err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.Write", trace.WithAttributes(attribute.Int("size", len(src))))
-	defer endSpan(span, err)
+	defer func() { endSpan(span, err) }()
 
 	num, err = c.writeCacheAndRemote(ctx, src)
 	if err != nil {
@@ -222,7 +222,7 @@ func (c *CachedFileObjectProvider) Write(ctx context.Context, src []byte) (num i
 // in parallel on any other machines.
 func (c *CachedFileObjectProvider) writeCacheAndRemote(ctx context.Context, src []byte) (size int, err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.writeCacheAndRemote")
-	defer endSpan(span, err)
+	defer func() { endSpan(span, err) }()
 
 	size, err = c.inner.Write(ctx, src)
 	if err != nil {
@@ -262,7 +262,7 @@ func (c *CachedFileObjectProvider) ReadAt(ctx context.Context, buff []byte, offs
 		attribute.Int64("offset", offset),
 		attribute.Int("buff_len", len(buff)),
 	))
-	defer endSpan(span, err)
+	defer func() { endSpan(span, err) }()
 
 	if err := c.validateReadAtParams(int64(len(buff)), offset); err != nil {
 		return 0, err
@@ -339,7 +339,7 @@ func (c *CachedFileObjectProvider) Delete(ctx context.Context) error {
 
 func (c *CachedFileObjectProvider) createCacheBlocksFromFile(ctx context.Context, inputPath string) (err error) {
 	ctx, span := tracer.Start(ctx, "CachedFileObjectProvider.createCacheBlocksFromFile")
-	defer endSpan(span, err)
+	defer func() { endSpan(span, err) }()
 
 	input, err := os.Open(inputPath)
 	if err != nil {
@@ -400,7 +400,7 @@ func (c *CachedFileObjectProvider) writeChunkFromFile(ctx context.Context, offse
 	_, span := tracer.Start(ctx, "write chunk-from-file", trace.WithAttributes(
 		attribute.Int64("offset", offset),
 	))
-	defer endSpan(span, err)
+	defer func() { endSpan(span, err) }()
 
 	chunkPath := c.makeChunkFilename(offset)
 	span.SetAttributes(attribute.String("chunk_path", chunkPath))
