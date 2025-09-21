@@ -117,7 +117,6 @@ linters:
         - { disabled: true, name: unused-parameter }  # todo: enable this
         - { disabled: true, name: unused-receiver }
         - { disabled: true, name: use-errors-new }  # todo: enable this
-        - { disabled: true, name: useless-break }  # todo: enable this
         - { disabled: true, name: var-declaration }
         - { disabled: true, name: var-naming }
     staticcheck:
@@ -133,3 +132,7 @@ linters:
 
 run:
   go: 1.24.7
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 50
