@@ -32,6 +32,7 @@ import (
 
 type ServerStore struct {
 	templatemanager.UnimplementedTemplateServiceServer
+
 	logger            *zap.Logger
 	builder           *build.Builder
 	buildCache        *cache.BuildCache
