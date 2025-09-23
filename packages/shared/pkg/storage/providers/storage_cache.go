@@ -152,10 +152,10 @@ func (c *CachedFileObjectProvider) WriteFromFileSystem(ctx context.Context, path
 	// this opens the file twice, but the API makes it difficult to use a MultiWriter
 
 	go func() {
-		if err2 := c.createCacheBlocksFromFile(ctx, path); err2 != nil {
+		if err := c.createCacheBlocksFromFile(context.WithoutCancel(ctx), path); err != nil {
 			zap.L().Error("failed to create cache blocks from file",
 				zap.String("path", path),
-				zap.Error(err2),
+				zap.Error(err),
 			)
 		}
 	}()
