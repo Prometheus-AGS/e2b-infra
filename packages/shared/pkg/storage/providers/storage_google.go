@@ -22,6 +22,7 @@ import (
 	"github.com/e2b-dev/infra/packages/shared/pkg/limit"
 	"github.com/e2b-dev/infra/packages/shared/pkg/storage"
 	"github.com/e2b-dev/infra/packages/shared/pkg/telemetry"
+	"github.com/e2b-dev/infra/packages/shared/pkg/utils"
 )
 
 const (
@@ -36,13 +37,13 @@ const (
 )
 
 var (
-	googleReadTimerFactory = must(telemetry.NewTimerFactory(meter,
+	googleReadTimerFactory = utils.Must(telemetry.NewTimerFactory(meter,
 		"orchestrator.storage.gcs.read",
 		"Duration of GCS reads",
 		"Total GCS bytes read",
 		"Total GCS reads",
 	))
-	googleWriteTimerFactory = must(telemetry.NewTimerFactory(meter,
+	googleWriteTimerFactory = utils.Must(telemetry.NewTimerFactory(meter,
 		"orchestrator.storage.gcs.write",
 		"Duration of GCS writes",
 		"Total bytes written to GCS",
